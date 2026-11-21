@@ -1,0 +1,12 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
+		"incremental": false,
+		"allowImportingTsExtensions": true,
+		"types": ["node"]
+	},
+	"include": ["credentials/**/*", "nodes/**/*", "test/**/*.mts"]
+}

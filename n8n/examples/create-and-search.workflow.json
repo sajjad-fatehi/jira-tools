@@ -1,0 +1,103 @@
+{
+	"name": "Jira Session: create and search issues",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "5f1c1b8e-0000-4000-8000-000000000001",
+			"name": "When clicking 'Execute workflow'",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [0, 200]
+		},
+		{
+			"parameters": {
+				"project": "PROJ",
+				"issueType": "10001",
+				"summary": "Created from n8n",
+				"additionalFields": {
+					"description": "Created by the n8n Jira Session node.",
+					"labels": "n8n-example, automation",
+					"priority": "3",
+					"dueDate": "2026-12-31T00:00:00",
+					"fieldsJson": "{\"environment\": \"staging\"}"
+				},
+				"customFields": {
+					"field": [
+						{
+							"fieldId": "customfield_10010",
+							"value": "5"
+						}
+					]
+				}
+			},
+			"id": "5f1c1b8e-0000-4000-8000-000000000002",
+			"name": "Create issue",
+			"type": "n8n-nodes-jira-session.jiraSession",
+			"typeVersion": 1,
+			"position": [240, 100],
+			"credentials": {
+				"jiraSessionApi": {
+					"id": "jiraSessionExample",
+					"name": "Jira Session account"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"operation": "getAll",
+				"filters": {
+					"project": "PROJ",
+					"labels": "n8n-example",
+					"text": "Created from n8n"
+				},
+				"limit": 10
+			},
+			"id": "5f1c1b8e-0000-4000-8000-000000000003",
+			"name": "Find created issue",
+			"type": "n8n-nodes-jira-session.jiraSession",
+			"typeVersion": 1,
+			"position": [480, 100],
+			"credentials": {
+				"jiraSessionApi": {
+					"id": "jiraSessionExample",
+					"name": "Jira Session account"
+				}
+			}
+		},
+		{
+			"parameters": {
+				"operation": "getAll",
+				"filterMode": "jql",
+				"jql": "project = PROJ ORDER BY created ASC",
+				"fields": "summary,status",
+				"returnAll": true
+			},
+			"id": "5f1c1b8e-0000-4000-8000-000000000004",
+			"name": "All project issues",
+			"type": "n8n-nodes-jira-session.jiraSession",
+			"typeVersion": 1,
+			"position": [240, 300],
+			"credentials": {
+				"jiraSessionApi": {
+					"id": "jiraSessionExample",
+					"name": "Jira Session account"
+				}
+			}
+		}
+	],
+	"connections": {
+		"When clicking 'Execute workflow'": {
+			"main": [
+				[
+					{ "node": "Create issue", "type": "main", "index": 0 },
+					{ "node": "All project issues", "type": "main", "index": 0 }
+				]
+			]
+		},
+		"Create issue": {
+			"main": [[{ "node": "Find created issue", "type": "main", "index": 0 }]]
+		}
+	},
+	"settings": { "executionOrder": "v1" },
+	"pinData": {}
+}

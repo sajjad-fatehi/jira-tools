@@ -130,6 +130,10 @@ Result: `~/.claude/skills/jira-tools/SKILL.md` (or `.claude/skills/jira-tools/SK
 
 Other agents that read the open `SKILL.md` format: copy or symlink the `skills/jira-tools` folder into that agent's skills directory, keeping the folder name `jira-tools` and the `SKILL.md` and `references/` layout. Check your agent's documentation for the directory; none are listed here because only the Claude Code layout above has been verified.
 
+## n8n node
+
+`n8n/` holds `n8n-nodes-jira-session`, an n8n community node that logs in the same way (username and password, cookie session) and can create issues and search issues with filters or JQL. It is a separate npm package and does not affect the Go build. Install, credential setup and examples: [`n8n/README.md`](n8n/README.md).
+
 ## Out of scope
 
 Deleting anything other than single attachments, worklogs, creating/editing sprints, moving issues between sprints, velocity/reports, bulk operations, editing arbitrary fields, TUI.
