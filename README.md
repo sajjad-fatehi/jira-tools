@@ -110,6 +110,26 @@ jira-tools search -sprint active -jql 'assignee = currentUser()' -max 50
 
 `issue` also requests `parent` and `subtasks`: the text view shows a `Parent:` line and a `Subtasks (N):` list (key, status, summary). `attachments <KEY>` reads `GET /rest/api/2/issue/<KEY>?fields=attachment`. `attachment-delete <ID>` (digits only) first does a read-only `GET /rest/api/2/attachment/<ID>` so a wrong id fails before deleting and the output names what was removed (`Deleted attachment <ID> (<name>, <size> bytes)`), then sends `DELETE /rest/api/2/attachment/<ID>` as the logged-in user. With `-dry-run` it only prints `DELETE <path>` and makes no request at all.
 
+## AI agent skill
+
+`skills/jira-tools/` is an Agent Skill (`SKILL.md` plus a `references/` folder) that teaches an AI coding agent to drive this CLI: commands, config, safe-use rules (write commands only on request, `-dry-run` first, never print credentials), recipes and `jq` patterns. The skill needs the `jira-tools` binary on `PATH` (see Install) and a working config (see Config).
+
+Claude Code loads skills from a `skills/` folder inside `.claude`. From a clone of this repo, pick one:
+
+```bash
+# user-level, every project (symlink: updates with git pull)
+mkdir -p ~/.claude/skills
+ln -s "$PWD/skills/jira-tools" ~/.claude/skills/jira-tools
+
+# project-level, run inside your project (copy: commit it with the project)
+mkdir -p .claude/skills
+cp -R /path/to/jira-tools/skills/jira-tools .claude/skills/
+```
+
+Result: `~/.claude/skills/jira-tools/SKILL.md` (or `.claude/skills/jira-tools/SKILL.md`). Start a new Claude Code session and the skill loads when you talk about Jira issues.
+
+Other agents that read the open `SKILL.md` format: copy or symlink the `skills/jira-tools` folder into that agent's skills directory, keeping the folder name `jira-tools` and the `SKILL.md` and `references/` layout. Check your agent's documentation for the directory; none are listed here because only the Claude Code layout above has been verified.
+
 ## Out of scope
 
 Deleting anything other than single attachments, worklogs, creating/editing sprints, moving issues between sprints, velocity/reports, bulk operations, editing arbitrary fields, TUI.
