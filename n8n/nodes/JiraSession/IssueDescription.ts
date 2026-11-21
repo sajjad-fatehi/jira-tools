@@ -4,6 +4,8 @@ export const DEFAULT_SEARCH_FIELDS = 'summary,status,assignee,issuetype,priority
 
 const showForCreate = { show: { resource: ['issue'], operation: ['create'] } };
 const showForSearch = { show: { resource: ['issue'], operation: ['getAll'] } };
+const showForCreateV1 = { show: { ...showForCreate.show, '@version': [1] } };
+const showForCreateV2 = { show: { ...showForCreate.show, '@version': [{ _cnd: { gte: 2 } }] } };
 
 export const issueOperations: INodeProperties[] = [
 	{
@@ -59,7 +61,7 @@ const createFields: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		displayOptions: showForCreate,
+		displayOptions: showForCreateV1,
 	},
 	{
 		displayName: 'Additional Fields',
@@ -67,7 +69,7 @@ const createFields: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Field',
 		default: {},
-		displayOptions: showForCreate,
+		displayOptions: showForCreateV1,
 		options: [
 			{
 				displayName: 'Additional Fields (JSON)',
@@ -149,7 +151,7 @@ const createFields: INodeProperties[] = [
 		placeholder: 'Add Custom Field',
 		typeOptions: { multipleValues: true },
 		default: {},
-		displayOptions: showForCreate,
+		displayOptions: showForCreateV1,
 		options: [
 			{
 				displayName: 'Field',
@@ -173,6 +175,85 @@ const createFields: INodeProperties[] = [
 				],
 			},
 		],
+	},
+	{
+		displayName: 'Fields',
+		name: 'createFields',
+		type: 'resourceMapper',
+		noDataExpression: true,
+		required: true,
+		default: { mappingMode: 'defineBelow', value: null },
+		description:
+			'Every field Jira shows on the create screen of the chosen project and issue type, with its required flag and allowed values',
+		displayOptions: showForCreateV2,
+		typeOptions: {
+			loadOptionsDependsOn: ['project', 'issueType'],
+			resourceMapper: {
+				resourceMapperMethod: 'getCreateFields',
+				mode: 'add',
+				fieldWords: { singular: 'field', plural: 'fields' },
+				addAllFields: true,
+				multiKeyMatch: false,
+				supportAutoMap: true,
+				noFieldsError: 'Choose a project and an issue type to load the fields of its create screen',
+			},
+		},
+	},
+	{
+		displayName: 'Assignee',
+		name: 'assignee',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		description: 'User the issue is assigned to; leave empty to use the project default',
+		displayOptions: showForCreateV2,
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				placeholder: 'Select a user...',
+				typeOptions: { searchListMethod: 'searchAssignableUsers', searchable: true },
+			},
+			{
+				displayName: 'By Username',
+				name: 'username',
+				type: 'string',
+				placeholder: 'jdoe',
+			},
+		],
+	},
+	{
+		displayName: 'Reporter',
+		name: 'reporter',
+		type: 'resourceLocator',
+		default: { mode: 'list', value: '' },
+		description:
+			'User reported as the creator (needs the Modify Reporter permission); leave empty for the logged-in user',
+		displayOptions: showForCreateV2,
+		modes: [
+			{
+				displayName: 'From List',
+				name: 'list',
+				type: 'list',
+				placeholder: 'Select a user...',
+				typeOptions: { searchListMethod: 'searchUsers', searchable: true },
+			},
+			{
+				displayName: 'By Username',
+				name: 'username',
+				type: 'string',
+				placeholder: 'jdoe',
+			},
+		],
+	},
+	{
+		displayName: 'Additional Fields (JSON)',
+		name: 'additionalFieldsJson',
+		type: 'json',
+		default: '{}',
+		description:
+			'Extra entries merged into the "fields" object of the create request last, for anything the Fields mapper cannot express',
+		displayOptions: showForCreateV2,
 	},
 ];
 

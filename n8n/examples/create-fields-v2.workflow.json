@@ -1,0 +1,253 @@
+{
+	"name": "Jira Session v2: create an issue with every field",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "9d1f6a4e-4c11-4c62-9a57-2b7e4d1f0a01",
+			"name": "When clicking 'Execute workflow'",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [0, 0]
+		},
+		{
+			"parameters": {
+				"project": "PROJ",
+				"issueType": "10002",
+				"createFields": {
+					"mappingMode": "defineBelow",
+					"value": {
+						"summary": "Checkout fails on Safari",
+						"description": "Created by the n8n Jira Session node (version 2).",
+						"customfield_10010": "20002",
+						"customfield_10011": "={{ \"Web, iOS\" }}",
+						"labels": "n8n-example, checkout",
+						"duedate": "2026-12-31T00:00:00"
+					},
+					"matchingColumns": [],
+					"schema": [
+						{
+							"id": "summary",
+							"displayName": "Summary",
+							"required": true,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "string"
+						},
+						{
+							"id": "customfield_10010",
+							"displayName": "Severity",
+							"required": true,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "options",
+							"options": [
+								{
+									"name": "Critical",
+									"value": "20001"
+								},
+								{
+									"name": "Major",
+									"value": "20002"
+								},
+								{
+									"name": "Minor",
+									"value": "20003"
+								}
+							]
+						},
+						{
+							"id": "customfield_10011",
+							"displayName": "Affected Platforms",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "options",
+							"options": [
+								{
+									"name": "Web",
+									"value": "20101"
+								},
+								{
+									"name": "Android",
+									"value": "20102"
+								},
+								{
+									"name": "iOS",
+									"value": "20103"
+								}
+							]
+						},
+						{
+							"id": "components",
+							"displayName": "Component/s",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "options",
+							"options": [
+								{
+									"name": "Backend",
+									"value": "10100"
+								},
+								{
+									"name": "Frontend",
+									"value": "10101"
+								}
+							]
+						},
+						{
+							"id": "description",
+							"displayName": "Description",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "string"
+						},
+						{
+							"id": "duedate",
+							"displayName": "Due Date",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "dateTime"
+						},
+						{
+							"id": "environment",
+							"displayName": "Environment",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "string"
+						},
+						{
+							"id": "fixVersions",
+							"displayName": "Fix Version/s",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "options",
+							"options": [
+								{
+									"name": "1.0",
+									"value": "10200"
+								},
+								{
+									"name": "2.0",
+									"value": "10201"
+								}
+							]
+						},
+						{
+							"id": "customfield_10013",
+							"displayName": "Go-Live Date",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "dateTime"
+						},
+						{
+							"id": "labels",
+							"displayName": "Labels",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "string"
+						},
+						{
+							"id": "priority",
+							"displayName": "Priority",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "options",
+							"options": [
+								{
+									"name": "Highest",
+									"value": "1"
+								},
+								{
+									"name": "Medium",
+									"value": "3"
+								}
+							]
+						},
+						{
+							"id": "customfield_10014",
+							"displayName": "Reviewer",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "string"
+						},
+						{
+							"id": "customfield_10012",
+							"displayName": "Story Points",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "number"
+						},
+						{
+							"id": "timetracking",
+							"displayName": "Time tracking",
+							"required": false,
+							"defaultMatch": false,
+							"canBeUsedToMatch": false,
+							"display": true,
+							"type": "string"
+						}
+					],
+					"attemptToConvertTypes": false,
+					"convertFieldsToString": false
+				},
+				"assignee": {
+					"__rl": true,
+					"value": "jsmith",
+					"mode": "list",
+					"cachedResultName": "John Smith (jsmith)"
+				},
+				"reporter": {
+					"__rl": true,
+					"value": "jdoe",
+					"mode": "username"
+				},
+				"additionalFieldsJson": "{\"environment\": \"staging\"}"
+			},
+			"id": "9d1f6a4e-4c11-4c62-9a57-2b7e4d1f0a02",
+			"name": "Create bug",
+			"type": "n8n-nodes-jira-session.jiraSession",
+			"typeVersion": 2,
+			"position": [260, 0]
+		}
+	],
+	"connections": {
+		"When clicking 'Execute workflow'": {
+			"main": [
+				[
+					{
+						"node": "Create bug",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	},
+	"settings": {
+		"executionOrder": "v1"
+	},
+	"pinData": {}
+}

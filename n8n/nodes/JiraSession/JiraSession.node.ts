@@ -6,18 +6,29 @@ import type {
 	INodePropertyOptions,
 	INodeType,
 	INodeTypeDescription,
+	ResourceMapperFields,
+	ResourceMapperValue,
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
+import {
+	buildCreatePayload,
+	fetchCreateMeta,
+	type JiraFieldMeta,
+	type MapperValue,
+	toResourceMapperFields,
+} from './createMeta';
 import { DEFAULT_SEARCH_FIELDS, issueFields, issueOperations } from './IssueDescription';
 import {
 	buildCreateFields,
 	type CreateAdditionalFields,
 	type CustomFieldEntry,
+	parseFieldsJson,
 } from './issueFields';
 import { buildJql, splitList, type OrderDirection, type SearchFilters } from './jql';
 import { CREDENTIAL_NAME } from './session';
 import { getBaseUrl, jiraApiRequest, searchIssues, toNodeError } from './transport';
+import { readLocatorValue, searchAllUsers, searchAssignableUsers } from './users';
 
 interface NamedEntity {
 	id?: string;
@@ -68,6 +79,10 @@ async function createIssue(
 	}
 
 	const created = await jiraApiRequest.call(this, 'POST', '/issue', { fields });
+	return toCreatedOutput(created, baseUrl);
+}
+
+function toCreatedOutput(created: IDataObject, baseUrl: string): IDataObject {
 	const key = String(created.key ?? '');
 	return {
 		id: created.id,
@@ -75,6 +90,59 @@ async function createIssue(
 		self: created.self,
 		url: `${baseUrl}/browse/${key}`,
 	};
+}
+
+type CreateMetaCache = Map<string, Promise<JiraFieldMeta[]>>;
+
+function readMapperValues(
+	mapper: ResourceMapperValue | undefined,
+	item: INodeExecutionData,
+): Record<string, MapperValue> {
+	if (mapper?.mappingMode === 'autoMapInputData') {
+		return item.json as Record<string, MapperValue>;
+	}
+	return mapper?.value ?? {};
+}
+
+async function createIssueV2(
+	this: IExecuteFunctions,
+	itemIndex: number,
+	baseUrl: string,
+	createMetaCache: CreateMetaCache,
+): Promise<IDataObject> {
+	const project = this.getNodeParameter('project', itemIndex) as string;
+	const issueType = this.getNodeParameter('issueType', itemIndex) as string;
+	const cacheKey = `${project}\u0000${issueType}`;
+	const fieldMetas =
+		createMetaCache.get(cacheKey) ?? fetchCreateMeta.call(this, project, issueType);
+	createMetaCache.set(cacheKey, fieldMetas);
+
+	let fields: IDataObject;
+	try {
+		const mapper = this.getNodeParameter('createFields', itemIndex, undefined) as
+			| ResourceMapperValue
+			| undefined;
+		fields = buildCreatePayload({
+			project,
+			issueType,
+			fieldMetas: await fieldMetas,
+			values: readMapperValues(mapper, this.getInputData()[itemIndex]),
+			assignee: readLocatorValue(
+				this.getNodeParameter('assignee', itemIndex, '', { extractValue: true }),
+			),
+			reporter: readLocatorValue(
+				this.getNodeParameter('reporter', itemIndex, '', { extractValue: true }),
+			),
+			fieldsJson: parseFieldsJson(
+				this.getNodeParameter('additionalFieldsJson', itemIndex, '{}') as string | IDataObject,
+			),
+		});
+	} catch (error) {
+		throw toNodeError(this.getNode(), error, { itemIndex });
+	}
+
+	const created = await jiraApiRequest.call(this, 'POST', '/issue', { fields });
+	return toCreatedOutput(created, baseUrl);
 }
 
 async function searchIssuesForItem(
@@ -113,7 +181,8 @@ export class JiraSession implements INodeType {
 		name: 'jiraSession',
 		icon: { light: 'file:jira.svg', dark: 'file:jira.dark.svg' },
 		group: ['output'],
-		version: [1],
+		version: [1, 2],
+		defaultVersion: 2,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description:
 			'Create and search Jira Server / Data Center issues using a username/password session login',
@@ -149,6 +218,26 @@ export class JiraSession implements INodeType {
 	};
 
 	methods = {
+		listSearch: {
+			searchAssignableUsers,
+			searchUsers: searchAllUsers,
+		},
+
+		resourceMapping: {
+			async getCreateFields(this: ILoadOptionsFunctions): Promise<ResourceMapperFields> {
+				const project = this.getCurrentNodeParameter('project') as string | undefined;
+				const issueType = this.getCurrentNodeParameter('issueType') as string | undefined;
+				if (!project || !issueType) {
+					return { fields: [] };
+				}
+				const fieldMetas = await fetchCreateMeta.call(this, project, issueType);
+				return {
+					fields: toResourceMapperFields(fieldMetas),
+					emptyFieldsNotice: 'Jira lists no fields on the create screen of this issue type',
+				};
+			},
+		},
+
 		loadOptions: {
 			async getProjects(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const projects = (await jiraApiRequest.call(
@@ -205,11 +294,16 @@ export class JiraSession implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 		const operation = this.getNodeParameter('operation', 0) as 'create' | 'getAll';
 		const baseUrl = await getBaseUrl.call(this);
+		const nodeVersion = this.getNode().typeVersion;
+		const createMetaCache: CreateMetaCache = new Map();
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				if (operation === 'create') {
-					const created = await createIssue.call(this, itemIndex, baseUrl);
+					const created =
+						nodeVersion >= 2
+							? await createIssueV2.call(this, itemIndex, baseUrl, createMetaCache)
+							: await createIssue.call(this, itemIndex, baseUrl);
 					returnData.push({ json: created, pairedItem: { item: itemIndex } });
 					continue;
 				}
