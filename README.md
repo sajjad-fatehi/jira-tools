@@ -3,7 +3,6 @@
 [![n8n node on npm](https://img.shields.io/npm/v/n8n-nodes-jira-session?label=n8n%20node&logo=npm)](https://www.npmjs.com/package/n8n-nodes-jira-session)
 [![npm downloads](https://img.shields.io/npm/dm/n8n-nodes-jira-session?logo=npm)](https://www.npmjs.com/package/n8n-nodes-jira-session)
 [![Go version](https://img.shields.io/github/go-mod/go-version/sajjad-fatehi/jira-tools?logo=go)](go.mod)
-[![License](https://img.shields.io/github/license/sajjad-fatehi/jira-tools)](LICENSE)
 
 Command-line client for self-hosted Jira Server / Data Center (REST API v2 and Agile API 1.0). Written in Go, standard library only, no dependencies.
 
