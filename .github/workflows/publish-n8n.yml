@@ -1,0 +1,115 @@
+name: Publish n8n node
+
+# Manual release of the n8n community node in n8n/:
+# bump the version (or keep it), commit, tag n8n-vX.Y.Z, publish to npm
+# with provenance and create a GitHub release.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump (none = publish the version already in n8n/package.json)
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - none
+        default: patch
+
+concurrency:
+  group: publish-n8n
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: n8n
+    steps:
+      - name: Require main
+        if: github.ref != 'refs/heads/main'
+        working-directory: .
+        run: |
+          echo "Run this workflow from main (got ${GITHUB_REF})." >&2
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: n8n/package-lock.json
+
+      # npm trusted publishing (OIDC, no token) needs npm >= 11.5.1
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint, build, test
+        run: |
+          npm run lint
+          npm run build
+          npm test
+
+      - name: Bump version
+        if: inputs.bump != 'none'
+        run: npm version "${{ inputs.bump }}" --no-git-tag-version
+
+      - name: Resolve version
+        id: version
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          tag="n8n-v${version}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists." >&2
+            exit 1
+          fi
+          if npm view "$(node -p "require('./package.json').name")@${version}" version >/dev/null 2>&1; then
+            echo "Version ${version} is already on npm." >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- package.json package-lock.json; then
+            git add package.json package-lock.json
+            git commit -m "n8n: release ${VERSION}"
+          fi
+          git tag -a "${TAG}" -m "n8n-nodes-jira-session ${VERSION}"
+          git push origin HEAD:main
+          git push origin "${TAG}"
+
+      # Authenticates through the trusted publisher configured on npmjs.com
+      # for this repo and workflow file; provenance is attached automatically.
+      - name: Publish to npm
+        env:
+          RELEASE_MODE: "true"
+        run: npm publish --provenance --access public
+
+      - name: GitHub release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "${TAG}" \
+            --title "n8n-nodes-jira-session ${VERSION}" \
+            --notes "npm: https://www.npmjs.com/package/n8n-nodes-jira-session/v/${VERSION}"
