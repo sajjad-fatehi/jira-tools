@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-jira-session",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "n8n node for Jira Server / Data Center that logs in with username and password (cookie session), for instances where API tokens and Basic auth headers do not work.",
 	"license": "MIT",
 	"homepage": "https://github.com/sajjad-fatehi/jira-tools/tree/main/n8n#readme",
