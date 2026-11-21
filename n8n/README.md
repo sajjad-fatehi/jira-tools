@@ -1,5 +1,10 @@
 # n8n-nodes-jira-session
 
+[![npm version](https://img.shields.io/npm/v/n8n-nodes-jira-session?logo=npm)](https://www.npmjs.com/package/n8n-nodes-jira-session)
+[![npm downloads](https://img.shields.io/npm/dm/n8n-nodes-jira-session?logo=npm)](https://www.npmjs.com/package/n8n-nodes-jira-session)
+[![n8n community node](https://img.shields.io/badge/n8n-community%20node-EA4B71?logo=n8n&logoColor=white)](https://docs.n8n.io/integrations/community-nodes/installation/)
+[![npm provenance](https://img.shields.io/badge/npm-provenance-2E7D32?logo=npm)](https://www.npmjs.com/package/n8n-nodes-jira-session#provenance)
+
 n8n community node for **Jira Server / Data Center** that logs in with a **username and password** (cookie session) instead of an API token or Basic auth header.
 
 Some self-hosted Jira instances sit behind a proxy that drops the `Authorization` header, so Basic, Bearer and personal access token auth all come back as `anonymous` / HTTP 401. n8n's built-in Jira node only offers header-based auth (Cloud OAuth2, Cloud API token, Server email + password as Basic auth), so it fails on such instances. This node does what the [`jira-tools`](../README.md) CLI does: `POST /rest/auth/1/session` with JSON `username`/`password`, then sends the returned cookies (`JSESSIONID` and any others) as `Cookie` on every call. It also works on instances where header auth is fine.
