@@ -1,0 +1,67 @@
+{
+	"name": "n8n-nodes-jira-session",
+	"version": "0.1.0",
+	"description": "n8n node for Jira Server / Data Center that logs in with username and password (cookie session), for instances where API tokens and Basic auth headers do not work.",
+	"license": "MIT",
+	"homepage": "https://github.com/sajjad-fatehi/jira-tools/tree/main/n8n#readme",
+	"keywords": [
+		"n8n-community-node-package",
+		"jira",
+		"jira-server",
+		"jira-data-center",
+		"session"
+	],
+	"author": {
+		"name": "Sajjad Fatehi",
+		"email": "54260852+sajjad-fatehi@users.noreply.github.com",
+		"url": "https://github.com/sajjad-fatehi"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/sajjad-fatehi/jira-tools.git",
+		"directory": "n8n"
+	},
+	"bugs": {
+		"url": "https://github.com/sajjad-fatehi/jira-tools/issues"
+	},
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"test": "node --import tsx --test \"test/**/*.test.mts\"",
+		"typecheck": "tsc -p tsconfig.test.json",
+		"mock-jira": "node mock-jira/server.mjs",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/JiraSessionApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/JiraSession/JiraSession.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "0.57.4",
+		"@types/node": "^22.10.0",
+		"eslint": "9.32.0",
+		"prettier": "3.6.2",
+		"release-it": "^21.1.0",
+		"tsx": "^4.20.0",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}
