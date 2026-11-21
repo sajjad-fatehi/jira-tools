@@ -135,3 +135,13 @@ docker restart n8n-e2e
 # http://host.docker.internal:8089, user jdoe / secret, import the example workflow and run it
 docker rm -f n8n-e2e
 ```
+
+### Releasing
+
+Releases run from GitHub Actions so the npm package carries [provenance](https://docs.npmjs.com/generating-provenance-statements), which n8n requires for verified community nodes.
+
+1. On npmjs.com, the package has a **trusted publisher** for GitHub Actions: repository `sajjad-fatehi/jira-tools`, workflow `publish-n8n.yml`. No npm token is stored in the repo.
+2. In GitHub: *Actions → Publish n8n node → Run workflow* on `main`, pick the bump (`patch`, `minor`, `major`, or `none` to publish the version already in `package.json`).
+3. The workflow lints, builds and tests, bumps `n8n/package.json`, commits and tags `n8n-vX.Y.Z`, publishes to npm and creates a GitHub release.
+
+`npm publish` from a local machine is blocked on purpose (`prepublishOnly` runs `n8n-node prerelease`).
