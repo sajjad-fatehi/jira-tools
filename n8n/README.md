@@ -17,7 +17,7 @@ Follow the [community nodes installation guide](https://docs.n8n.io/integrations
   # inside the n8n container / host, as the n8n user
   mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes
   npm install n8n-nodes-jira-session            # from npm
-  # or: npm install --legacy-peer-deps /path/to/n8n-nodes-jira-session-0.1.0.tgz
+  # or: npm install --legacy-peer-deps /path/to/n8n-nodes-jira-session-*.tgz
   ```
 
   Then restart n8n. Build a tarball from this folder with `npm ci && npm run build && npm pack`.
@@ -47,7 +47,45 @@ How the session works:
 
 Resource **Issue**:
 
-### Create
+### Create (node version 2)
+
+New nodes use version 2. Workflows saved with version 1 keep working unchanged: they keep the [version 1 form](#create-node-version-1) until you replace the node.
+
+| Parameter | Notes |
+|---|---|
+| Project | Loaded from `GET /rest/api/2/project`, or a project key via expression. |
+| Issue Type | Loaded per project from `GET /rest/api/2/project/{key}`, or an issue type ID via expression. |
+| Fields | Every field of the project + issue type create screen, read from Jira's create metadata. Required fields are marked and cannot be removed; optional ones can be removed or added back. Reload with *Refresh field list* after changing the screen in Jira. See [Fields mapper](#fields-mapper). |
+| Assignee | **From list**: type to search users assignable in the chosen project (`GET /rest/api/2/user/assignable/search`), shown as *Display Name (username)*. **By username**: type or map a username. Empty = project default. |
+| Reporter | Same, searching all users (`GET /rest/api/2/user/search`). Empty = the logged-in user. Setting it needs the *Modify Reporter* permission. |
+| Additional Fields (JSON) | Merged into `fields` last, for anything the mapper cannot express; overrides mapper values. |
+
+| Fields mapper after choosing project + issue type | Assignee search while typing |
+|---|---|
+| ![Fields mapper](docs/create-v2-fields-mapper.png) | ![Assignee search](docs/create-v2-assignee-search.png) |
+
+#### Fields mapper
+
+The schema comes from `GET /rest/api/2/issue/createmeta/{project}/issuetypes/{issueTypeId}` (Jira 8.4+, read page by page). When the server answers 404 (older Jira), the node falls back to `GET /rest/api/2/issue/createmeta?projectKeys=…&issuetypeIds=…&expand=projects.issuetypes.fields`. At execution the node reads the same metadata once per project + issue type and converts each value:
+
+| Jira field schema | Mapper input | Sent to Jira |
+|---|---|---|
+| `string` (summary, description, text custom fields) | text | text |
+| `number` | number | number |
+| `date` (due date, date pickers) | date | `yyyy-MM-dd` |
+| `datetime` | date-time | `yyyy-MM-ddTHH:mm:ss.SSS+0000`; a value without offset is read as UTC |
+| Anything with `allowedValues`: option (select), priority, resolution, version, component, security level… | dropdown of allowed values | `{"id": "…"}`; an array of them when the field holds several (fix versions, components, multi-select) |
+| `array` of `string` (labels) | comma-separated text | array of strings |
+| `user` / `group` (user pickers), and arrays of them | username(s), comma-separated | `{"name": "…"}` / array of them |
+| `parent` (sub-tasks) | issue key | `{"key": "PROJ-1"}` |
+| anything else (time tracking, cascading select, plugin fields) | text | parsed as JSON when it is JSON, e.g. `{"originalEstimate": "1d"}`, otherwise text |
+
+- A field is **required** when Jira marks it required and has no default for it (Jira fills defaulted ones such as priority itself).
+- The n8n mapper dropdown picks **one** value. For multi-value fields (multi-select, components, fix versions) switch the field to an expression and give ids or names comma-separated (`Web, iOS`) or as a JSON array (`["20101", "iOS"]`). Names are matched case-insensitively against the allowed values; an unknown value fails the item and lists the choices.
+- Project, issue type, assignee and reporter have their own parameters; attachments cannot be set on create, so these are not in the mapper.
+- *Map Automatically* takes the values from input item keys named like the field IDs (`summary`, `customfield_10010`); keys that are not fields of the create screen are ignored.
+
+### Create (node version 1)
 
 | Parameter | Notes |
 |---|---|
@@ -87,7 +125,9 @@ Both operations support **Continue On Fail**: a failing item outputs `{ "error":
 
 ## Examples
 
-[`examples/create-and-search.workflow.json`](examples/create-and-search.workflow.json): import it with *Workflows → Import from File*, then pick your Jira Session credential on the three Jira nodes and adjust project/issue type/priority IDs. It:
+[`examples/create-fields-v2.workflow.json`](examples/create-fields-v2.workflow.json) (node version 2): import it, pick your Jira Session credential, choose project and issue type and click *Refresh field list* on **Fields**. It creates a `PROJ` bug with summary, the required custom select *Severity*, a multi-select set by expression, labels, a due date, an assignee from the user search and the reporter by username.
+
+[`examples/create-and-search.workflow.json`](examples/create-and-search.workflow.json) (node version 1): import it with *Workflows → Import from File*, then pick your Jira Session credential on the three Jira nodes and adjust project/issue type/priority IDs. It:
 
 1. creates a `PROJ` task with description, labels, priority, due date, one custom field and a JSON extra field,
 2. searches the created issue with the builder (project, label, text),
@@ -95,7 +135,7 @@ Both operations support **Continue On Fail**: a failing item outputs `{ "error":
 
 ## Limitations
 
-- Jira Server / Data Center, REST API v2 (tested against the 8.x API shape). Jira Cloud does not support `/rest/auth/1/session` with a password; use n8n's built-in Jira node there.
+- Jira Server / Data Center, REST API v2 (tested against the 8.x/9.x API shape). Jira Cloud does not support `/rest/auth/1/session` with a password; use n8n's built-in Jira node there.
 - Only Issue → Create and Issue → Get Many. No update, transition, comment, attachment or trigger yet.
 - Search uses `POST /rest/api/2/search`, which Jira Data Center 10+ still offers; very large `Return All` result sets are fetched page by page into memory.
 - Accounts with two-factor auth or SSO-only login (no Jira password) cannot use session login.
@@ -116,7 +156,7 @@ npm run dev        # n8n with this node loaded, rebuilds on change
 
 ### Mock Jira for end-to-end checks
 
-`mock-jira/server.mjs` is a small in-memory Jira (no dependencies). Like the instances this node targets, it ignores the `Authorization` header and only accepts the cookie from `POST /rest/auth/1/session` (user `jdoe`, password `secret`). It implements `myself`, `project`, `project/{key}`, `issue/createmeta`, `priority`, `POST issue` (checks the XSRF header), `POST search` with paging, and `GET /__log` (routes called, whether a cookie was sent).
+`mock-jira/server.mjs` is a small in-memory Jira (no dependencies). Like the instances this node targets, it ignores the `Authorization` header and only accepts the cookie from `POST /rest/auth/1/session` (user `jdoe`, password `secret`). It implements `myself`, `project`, `project/{key}`, `priority`, create metadata (paged `issue/createmeta/{project}/issuetypes/{id}` and legacy `issue/createmeta?expand=…`; Task, Bug with a required custom select, Sub-task with a required parent, plus multi-select, number, date-time, user picker and time tracking fields), `user/assignable/search` and `user/search` (60 users, paged), `POST issue` (checks the XSRF header and required fields), `POST search` with paging, `GET /__log` (routes and query strings called, whether a cookie was sent) and `GET /__last-create` (body of the last create request). Start it with `MOCK_JIRA_LEGACY_CREATEMETA=1` to make the paged createmeta endpoint 404, as on Jira before 8.4.
 
 ```bash
 npm run mock-jira            # http://localhost:8089, or: node mock-jira/server.mjs <port>
@@ -129,7 +169,7 @@ npm run build && npm pack --pack-destination /tmp/n8n-e2e
 docker run -d --name n8n-e2e -p 5678:5678 -v /tmp/n8n-e2e:/e2e \
   --add-host host.docker.internal:host-gateway docker.n8n.io/n8nio/n8n:2.48.7
 docker exec n8n-e2e sh -c 'mkdir -p ~/.n8n/nodes && cd ~/.n8n/nodes && npm init -y >/dev/null \
-  && npm install --legacy-peer-deps /e2e/n8n-nodes-jira-session-0.1.0.tgz'
+  && npm install --legacy-peer-deps /e2e/n8n-nodes-jira-session-*.tgz'
 docker restart n8n-e2e
 # open http://localhost:5678, create a Jira Session credential with Base URL
 # http://host.docker.internal:8089, user jdoe / secret, import the example workflow and run it
