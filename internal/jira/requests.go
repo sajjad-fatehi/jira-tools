@@ -148,6 +148,10 @@ func CommentRequest(key, body string) Request {
 	return Request{Method: "POST", Path: issuePath(key) + "/comment", Body: map[string]string{"body": body}}
 }
 
+func UpdateCommentRequest(key, commentID, body string) Request {
+	return Request{Method: "PUT", Path: issuePath(key) + "/comment/" + url.PathEscape(commentID), Body: map[string]string{"body": body}}
+}
+
 func DeleteCommentRequest(key, commentID string) Request {
 	return Request{Method: "DELETE", Path: issuePath(key) + "/comment/" + url.PathEscape(commentID)}
 }

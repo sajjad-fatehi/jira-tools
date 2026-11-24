@@ -50,6 +50,7 @@ func commands() []command {
 		{"attachment-download", "Save one attachment to a new file", "attachment-download <ID> -out <path>", (*app).runAttachmentDownload},
 		{"attachment-delete", "Delete one attachment by id", "attachment-delete <ID>", (*app).runAttachmentDelete},
 		{"comment", "Add a comment", "comment <KEY> -body <text>", (*app).runComment},
+		{"comment-update", "Replace the text of one comment by id", "comment-update <KEY> -id <comment id> -body <text>", (*app).runCommentUpdate},
 		{"comment-delete", "Delete one comment by id", "comment-delete <KEY> -id <comment id>", (*app).runCommentDelete},
 		{"transitions", "List available transitions", "transitions <KEY>", (*app).runTransitions},
 		{"transition", "Move an issue through a transition", "transition <KEY> -to <name or id>", (*app).runTransition},
