@@ -80,6 +80,7 @@ jira-tools attachments PROJ-123                                       # id, name
 jira-tools attachment-download 10001 -out /tmp/report.pdf             # save one attachment to a NEW file (never overwrites; URL must stay under the Jira base URL)
 jira-tools attachment-delete 10001 -dry-run                           # DELETE one attachment by id; -dry-run sends nothing
 jira-tools comment PROJ-123 -body "Looking into it"
+jira-tools comment-update PROJ-123 -id 10100 -body 'New text'         # PUT: replace the whole text of one comment
 jira-tools comment-delete PROJ-123 -id 10100                          # DELETE one comment by id
 jira-tools transitions PROJ-123                                       # id, name, target status
 jira-tools transition PROJ-123 -to "In progress"                      # transition name, target status name or id
