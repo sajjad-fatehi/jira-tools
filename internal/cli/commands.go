@@ -339,6 +339,24 @@ func (instance *app) runComment(args []string) error {
 	return instance.finishWrite(settings, jira.CommentRequest(key, *body), "Commented on "+key)
 }
 
+func (instance *app) runCommentUpdate(args []string) error {
+	flagSet, settings := instance.commandFlags("comment-update <KEY> -id <comment id> -body <text>", true)
+	rawID := flagSet.String("id", "", "comment id (required; see 'issue <KEY> -json')")
+	body := flagSet.String("body", "", "new comment text, replaces the whole body (required)")
+	key, err := parseWithKey(flagSet, args)
+	if err != nil {
+		return err
+	}
+	if err := requireFlags(flagSet, map[string]string{"id": *rawID, "body": *body}); err != nil {
+		return err
+	}
+	commentID, err := jira.NormalizeCommentID(*rawID)
+	if err != nil {
+		return err
+	}
+	return instance.finishWrite(settings, jira.UpdateCommentRequest(key, commentID, *body), fmt.Sprintf("Updated comment %s on %s", commentID, key))
+}
+
 func (instance *app) runCommentDelete(args []string) error {
 	flagSet, settings := instance.commandFlags("comment-delete <KEY> -id <comment id>", true)
 	rawID := flagSet.String("id", "", "comment id (required; see 'issue <KEY> -json')")

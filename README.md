@@ -57,7 +57,7 @@ Accepted before or after the command name:
 - `-json` print the raw API JSON instead of the text view
 - `-env-file <path>` env file to use
 
-Write commands (`create`, `attach`, `attachment-delete`, `comment`, `comment-delete`, `transition`, `assign`) also take `-dry-run`: print method, path and JSON body (if any), send nothing. `transition -to <name>` still does a read-only GET of the issue's transitions to resolve the name (numeric ids need no network).
+Write commands (`create`, `attach`, `attachment-delete`, `comment`, `comment-update`, `comment-delete`, `transition`, `assign`) also take `-dry-run`: print method, path and JSON body (if any), send nothing. `transition -to <name>` still does a read-only GET of the issue's transitions to resolve the name (numeric ids need no network).
 
 Flags are single-dash Go flags (`-json`, also accepted as `--json`). An issue key may come before or after the flags and is case-insensitive.
 

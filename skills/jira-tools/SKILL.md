@@ -39,7 +39,7 @@ Credential rules, because the output of a command ends up in the conversation:
 
 **Read commands are free to run:** `me`, `projects`, `search`, `boards`, `sprints`, `issue`, `issuetypes`, `attachments`, `attachment-download`, `transitions`, `version`.
 
-**Write commands change shared state:** `create`, `comment`, `comment-delete`, `attach`, `attachment-delete`, `transition`, `assign`. Others see these changes immediately and deletes cannot be undone. So:
+**Write commands change shared state:** `create`, `comment`, `comment-update`, `comment-delete`, `attach`, `attachment-delete`, `transition`, `assign`. Others see these changes immediately and deletes cannot be undone. So:
 
 1. Run a write only when the user asked for that change in this conversation.
 2. Run it with `-dry-run` first. It prints the HTTP method, path and JSON body (or file list) and sends nothing. (`transition -to <name>` still does a read-only GET to resolve the name; `attachment-delete` and `comment-delete` dry runs make no request.)

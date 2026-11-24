@@ -139,6 +139,53 @@ func TestCommentDeleteSendsDelete(t *testing.T) {
 	}
 }
 
+func TestCommentUpdateSendsPut(t *testing.T) {
+	fake := serveRoutes(t, map[string]string{
+		"PUT /rest/api/2/issue/PROJ-120/comment/10100": `{"id":"10100"}`,
+	})
+	stdout, stderr, code := run(t, "comment-update", "PROJ-120", "-id", "10100", "-body", "new text")
+	if code != 0 {
+		t.Fatalf("exit %d err %q", code, stderr)
+	}
+	last := fake.last(t)
+	if last.Method != "PUT" || last.Path != "/rest/api/2/issue/PROJ-120/comment/10100" {
+		t.Fatalf("last request %+v", last)
+	}
+	if !strings.Contains(stdout, "Updated comment 10100 on PROJ-120") {
+		t.Fatalf("unexpected output %q", stdout)
+	}
+}
+
+func TestCommentUpdateDryRunSendsNothing(t *testing.T) {
+	fake := serveRoutes(t, map[string]string{})
+	stdout, stderr, code := run(t, "comment-update", "PROJ-120", "-id", "10100", "-body", "new text", "-dry-run")
+	if code != 0 {
+		t.Fatalf("exit %d err %q", code, stderr)
+	}
+	if !strings.HasPrefix(stdout, "PUT /rest/api/2/issue/PROJ-120/comment/10100") || !strings.Contains(stdout, `"body": "new text"`) {
+		t.Fatalf("unexpected output %q", stdout)
+	}
+	if fake.count() != 0 {
+		t.Fatal("dry-run sent requests")
+	}
+}
+
+func TestCommentUpdateRejectsBadInput(t *testing.T) {
+	fake := serveRoutes(t, map[string]string{})
+	for _, args := range [][]string{
+		{"comment-update", "PROJ-120", "-body", "x"},
+		{"comment-update", "PROJ-120", "-id", "10100"},
+		{"comment-update", "PROJ-120", "-id", "../x", "-body", "x"},
+	} {
+		if _, _, code := run(t, args...); code == 0 {
+			t.Errorf("%v: expected non-zero exit", args)
+		}
+	}
+	if fake.count() != 0 {
+		t.Fatal("bad input reached the API")
+	}
+}
+
 func TestCommentDeleteRejectsBadID(t *testing.T) {
 	fake := serveRoutes(t, map[string]string{})
 	for _, args := range [][]string{{"comment-delete", "PROJ-120"}, {"comment-delete", "PROJ-120", "-id", "../x"}, {"comment-delete", "PROJ-120", "-id", "12a", "-dry-run"}} {
